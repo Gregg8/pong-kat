@@ -1,0 +1,9 @@
+node_modules/
+dist/
+*.local
+.DS_Store
+
+# Capacitor / iOS (added when we wrap for the phone)
+ios/App/Pods/
+ios/App/App/public/
+.env
