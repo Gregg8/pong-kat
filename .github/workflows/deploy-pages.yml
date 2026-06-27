@@ -7,10 +7,9 @@ name: Deploy web to GitHub Pages
 
 on:
   push:
-    # `main` is the permanent production trigger; the claude/* branch is included
-    # so the site can be verified before merging. Safe to drop the claude/* line
-    # once this is merged to main.
-    branches: [main, "claude/pong-1970s-replica-n5jswi"]
+    # GitHub Pages' github-pages environment only allows deploys from the
+    # default branch, so the site deploys from main.
+    branches: [main]
     paths:
       - "src/**"
       - "index.html"

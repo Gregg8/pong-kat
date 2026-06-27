@@ -73,18 +73,21 @@ limit and without a desktop — materially better if Gregg is in the EU.
 
 ## Web hosting (GitHub Pages)
 
-- A Pages deploy workflow exists (`.github/workflows/deploy-pages.yml`). The web
-  build succeeds; the blocker is that **Pages needs the repo to be public** (or
-  a paid plan) — the repo is currently private on a free plan.
-- **Decision (Gregg):** make the repo **public** → use GitHub Pages.
-- **Manual step pending:** Gregg flips repo visibility to public (Settings →
-  Danger Zone). The integration token can't do this.
-- After that, a push triggers the deploy; expected live URL:
-  **https://gregg8.github.io/pong-kat/**
-- Note: the deploy workflow currently also triggers on the `claude/*` branch for
-  pre-merge verification; tighten to `main`-only once merged. If the
-  `github-pages` environment restricts deploys to the default branch, deploy
-  from `main` (merge the branch) instead.
+Decision (Gregg): make the repo **public** → use GitHub Pages. Live URL:
+**https://gregg8.github.io/pong-kat/**
+
+Setup history (all resolved):
+1. ✅ Repo made **public** (was private on free plan → Pages disallowed).
+2. ✅ Pages **enabled** in Settings → Pages → Source: "GitHub Actions" (the
+   workflow token can't auto-create the Pages site).
+3. ✅ Build job is green (configure-pages + upload-pages-artifact succeed).
+
+**Last step remaining:** the `github-pages` environment only allows deploys from
+the **default branch (`main`)**, so the latest code must be on `main`. The
+feature branch's build deploys fine but the deploy job is gated. **Action:**
+merge `claude/pong-1970s-replica-n5jswi` → `main`; the push to main then deploys
+the site automatically. The workflow is now `main`-only (feature-branch trigger
+removed).
 
 ## Next steps
 
