@@ -40,18 +40,33 @@ window.addEventListener("keydown", (e) => {
 // --- Menu / start handling -------------------------------------------------
 function handleMenuInput() {
   if (game.phase === "menu") {
-    // Adjust difficulty with arrows / + / - before starting.
-    if (input.consume("ArrowRight") || input.consume("Equal")) game.cycleDifficulty(1);
-    if (input.consume("ArrowLeft") || input.consume("Minus")) game.cycleDifficulty(-1);
+    // Keyboard shortcuts.
+    if (input.consume("ArrowRight") || input.consume("Equal"))
+      game.cycleDifficulty(1);
+    if (input.consume("ArrowLeft") || input.consume("Minus"))
+      game.cycleDifficulty(-1);
+    if (input.consume("Digit1") || input.consume("Numpad1")) return game.start("1p");
+    if (input.consume("Digit2") || input.consume("Numpad2")) return game.start("2p");
+    if (input.consume("Space") || input.consume("Enter")) return game.start("1p");
 
-    if (input.consume("Digit1") || input.consume("Numpad1")) game.start("1p");
-    else if (input.consume("Digit2") || input.consume("Numpad2"))
-      game.start("2p");
-    // A tap/click/space defaults to 1-player so touch users can just go.
-    else if (input.consumeConfirm()) game.start("1p");
+    // Touch / mouse: hit-test the on-screen buttons.
+    if (input.consume("Pointer")) {
+      const hit = renderer.hitTestMenu(input.lastPress);
+      if (hit === "onePlayer") game.start("1p");
+      else if (hit === "twoPlayer") game.start("2p");
+      else if (hit === "diffUp") game.cycleDifficulty(1);
+      else if (hit === "diffDown") game.cycleDifficulty(-1);
+    }
   } else if (game.phase === "gameover") {
-    if (input.consumeConfirm() || input.consume("Digit1")) game.start("1p");
+    if (input.consume("Digit1")) game.start("1p");
     else if (input.consume("Digit2")) game.start("2p");
+    // Any tap / space returns to the menu to pick mode & difficulty.
+    else if (
+      input.consume("Pointer") ||
+      input.consume("Space") ||
+      input.consume("Enter")
+    )
+      game.phase = "menu";
   }
 }
 

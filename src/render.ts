@@ -21,6 +21,8 @@ import {
 import { drawNumber } from "./font";
 import type { Game } from "./game";
 
+type Rect = { x: number; y: number; w: number; h: number };
+
 export class Renderer {
   ctx: CanvasRenderingContext2D;
   // Retro CRT look is the default; toggle with `C`.
@@ -122,18 +124,10 @@ export class Renderer {
     }
 
     // Text overlays.
-    if (g.phase === "menu")
-      this.overlay([
-        "PONG",
-        "",
-        "1 — ONE PLAYER",
-        "2 — TWO PLAYERS",
-        "",
-        `◄  DIFFICULTY  ${DIFFICULTY[g.difficulty].label}  ►`,
-      ]);
+    if (g.phase === "menu") this.drawMenu(g);
     else if (g.phase === "gameover") {
       const winner = g.score1 >= WIN_SCORE ? "LEFT" : "RIGHT";
-      this.overlay([`${winner} WINS`, "", "PRESS START"]);
+      this.overlay([`${winner} WINS`, "", "TAP TO CONTINUE"]);
     }
 
     if (this.crt) this.drawCrt();
@@ -153,6 +147,63 @@ export class Renderer {
       ctx.fillText(line, cx, y);
       y += i === 0 ? lineH * 1.4 : lineH;
     });
+  }
+
+  /** Tappable menu button rectangles, in virtual coords. */
+  private menuButtons(): Record<string, Rect> {
+    const cx = FIELD_W / 2;
+    return {
+      onePlayer: { x: cx - 150, y: 250, w: 300, h: 58 },
+      twoPlayer: { x: cx - 150, y: 322, w: 300, h: 58 },
+      diffDown: { x: cx - 160, y: 452, w: 56, h: 56 },
+      diffUp: { x: cx + 104, y: 452, w: 56, h: 56 },
+    };
+  }
+
+  /** Returns the key of the menu button at a virtual point, or null. */
+  hitTestMenu(p: { x: number; y: number } | null): string | null {
+    if (!p) return null;
+    const b = this.menuButtons();
+    for (const key of Object.keys(b)) {
+      const r = b[key];
+      if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h)
+        return key;
+    }
+    return null;
+  }
+
+  private drawButton(r: Rect, label: string, fontPx: number): void {
+    const ctx = this.ctx;
+    ctx.lineWidth = Math.max(2, this.fs(3));
+    ctx.strokeStyle = COLOR_FG;
+    ctx.strokeRect(this.fx(r.x), this.fy(r.y), this.fs(r.w), this.fs(r.h));
+    ctx.fillStyle = COLOR_FG;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${this.fs(fontPx)}px "Courier New", monospace`;
+    ctx.fillText(label, this.fx(r.x + r.w / 2), this.fy(r.y + r.h / 2));
+  }
+
+  private drawMenu(g: Game): void {
+    const ctx = this.ctx;
+    const cx = FIELD_W / 2;
+    ctx.fillStyle = COLOR_FG;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    ctx.font = `${this.fs(72)}px "Courier New", monospace`;
+    ctx.fillText("PONG", this.fx(cx), this.fy(150));
+
+    const b = this.menuButtons();
+    this.drawButton(b.onePlayer, "1 PLAYER", 26);
+    this.drawButton(b.twoPlayer, "2 PLAYERS", 26);
+
+    ctx.font = `${this.fs(22)}px "Courier New", monospace`;
+    ctx.fillText("DIFFICULTY", this.fx(cx), this.fy(420));
+    this.drawButton(b.diffDown, "◄", 26);
+    this.drawButton(b.diffUp, "►", 26);
+    ctx.font = `${this.fs(44)}px "Courier New", monospace`;
+    ctx.fillText(DIFFICULTY[g.difficulty].label, this.fx(cx), this.fy(480));
   }
 
   private drawCrt(): void {
