@@ -22,6 +22,8 @@ export class Input {
   private pointerY: [number | null, number | null] = [null, null];
   /** One-shot actions consumed by the game (start, pause, toggles). */
   private pressed = new Set<string>();
+  /** Virtual-coord location of the most recent press, for menu hit-testing. */
+  lastPress: { x: number; y: number } | null = null;
 
   /** Maps a client point to virtual coords; set by the renderer each resize. */
   toVirtual: (clientX: number, clientY: number) => { x: number; y: number } = (
@@ -61,6 +63,7 @@ export class Input {
       this.fireGesture();
       const v = this.toVirtual(e.clientX, e.clientY);
       this.pointerY[0] = v.y;
+      this.lastPress = v;
       this.pressed.add("Pointer");
     });
 
@@ -84,6 +87,10 @@ export class Input {
       "touchstart",
       (e) => {
         handleTouches(e);
+        if (e.touches.length > 0) {
+          const t = e.touches[0];
+          this.lastPress = this.toVirtual(t.clientX, t.clientY);
+        }
         this.pressed.add("Pointer");
         e.preventDefault();
       },
