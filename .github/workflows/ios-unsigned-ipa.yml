@@ -1,0 +1,83 @@
+name: Build unsigned iOS IPA
+
+# Builds the Capacitor iOS app on a cloud macOS runner and produces an
+# UNSIGNED .ipa. No Apple account or signing secrets are needed here —
+# Sideloadly (or AltStore/SideStore) on your Windows PC re-signs the .ipa
+# with your free Apple ID at install time.
+#
+# Trigger it manually from the Actions tab, or it runs on pushes that touch
+# the app. Download the "Pong-unsigned-ipa" artifact when it finishes.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["**"]
+    paths:
+      - "src/**"
+      - "index.html"
+      - "ios/**"
+      - "capacitor.config.ts"
+      - "package.json"
+      - ".github/workflows/ios-unsigned-ipa.yml"
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web bundle
+        run: npm run build
+
+      - name: Sync web assets into the iOS project
+        run: npx cap sync ios
+
+      - name: Resolve Swift Package dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project ios/App/App.xcodeproj \
+            -scheme App
+
+      - name: Archive (unsigned)
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            archive
+
+      - name: Package unsigned .ipa
+        run: |
+          APP_PATH="$RUNNER_TEMP/App.xcarchive/Products/Applications/App.app"
+          if [ ! -d "$APP_PATH" ]; then
+            echo "::error::App.app not found in archive"; exit 1
+          fi
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$APP_PATH" "$RUNNER_TEMP/Payload/"
+          (cd "$RUNNER_TEMP" && zip -qr Pong-unsigned.ipa Payload)
+          mkdir -p dist-ipa
+          cp "$RUNNER_TEMP/Pong-unsigned.ipa" dist-ipa/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Pong-unsigned-ipa
+          path: dist-ipa/Pong-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 14

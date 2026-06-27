@@ -4,7 +4,7 @@
 > needs deciding. It exists so **any** session (or contributor) can pick up
 > without relying on chat history. Update it as decisions are made.
 
-_Last updated: 2026-06-27 (Gregg answered Q2–Q4; Q1 in progress)_
+_Last updated: 2026-06-27 (all Qs answered; Route A iOS pipeline built)_
 
 ## Goal
 
@@ -32,11 +32,14 @@ Apple Developer account** (sideloading), explicitly _not_ as a web page.
 
 ## Decisions / answers
 
-1. **Mac:** Mac Mini arriving in ~2 months. Until then, wants a no-Mac way to
-   run the game on the iPhone via a "downloadable app runtime." Research done —
-   see [iOS interim options](#ios-interim-options-no-mac-until-the-mac-mini)
-   below. **Still need from Gregg:** which computer he has now (Windows/Linux?)
-   and his region (EU?), since those pick the route.
+1. **Mac:** Mac Mini arriving in ~2 months. **Chosen: Route A** — cloud-built
+   Capacitor IPA, sideloaded from a **Windows PC** with Sideloadly + a free
+   Apple ID. Gregg is in **Australia** (not EU → no AltStore PAL; standard
+   7-day / 3-app free-account limits apply). iPad can't build/sideload, so it's
+   not part of the flow. **Built:** Capacitor iOS project (`ios/`), a GitHub
+   Actions workflow that produces an unsigned `.ipa` (no Apple secrets needed —
+   Sideloadly signs on the PC), and a step-by-step guide in
+   `docs/SIDELOADING.md`.
 2. **Sounds:** current frequencies are fine. ✅
 3. **CRT look:** retro CRT is the **default** now (toggle `C`). ✅
 4. **Difficulty:** 5 selectable AI levels added (default 3). A touch-friendly
