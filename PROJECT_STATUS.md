@@ -71,6 +71,21 @@ with a **7-day** certificate. The realistic no-Mac routes:
 EU note: the DMA lets **AltStore PAL** install notarized apps without the 7-day
 limit and without a desktop — materially better if Gregg is in the EU.
 
+## Web hosting (GitHub Pages)
+
+- A Pages deploy workflow exists (`.github/workflows/deploy-pages.yml`). The web
+  build succeeds; the blocker is that **Pages needs the repo to be public** (or
+  a paid plan) — the repo is currently private on a free plan.
+- **Decision (Gregg):** make the repo **public** → use GitHub Pages.
+- **Manual step pending:** Gregg flips repo visibility to public (Settings →
+  Danger Zone). The integration token can't do this.
+- After that, a push triggers the deploy; expected live URL:
+  **https://gregg8.github.io/pong-kat/**
+- Note: the deploy workflow currently also triggers on the `claude/*` branch for
+  pre-merge verification; tighten to `main`-only once merged. If the
+  `github-pages` environment restricts deploys to the default branch, deploy
+  from `main` (merge the branch) instead.
+
 ## Next steps
 
 - Resolve route A vs B (needs Gregg's computer + region).
