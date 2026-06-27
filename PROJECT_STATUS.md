@@ -28,7 +28,9 @@ Apple Developer account** (sideloading), explicitly _not_ as a web page.
 ## Status
 
 - ✅ Web build — playable, verified rendering. Merged to `main` (PR #1).
-- ⏳ iPhone native wrapper — not started (waiting on the Mac question below).
+- ✅ iPhone wrapper (Route A) — Capacitor project + CI build **verified green**
+  on a macOS runner; produces the `Pong-unsigned-ipa` artifact. Ready to
+  sideload from Windows via `docs/SIDELOADING.md`.
 
 ## Decisions / answers
 
