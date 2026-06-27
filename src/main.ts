@@ -37,8 +37,8 @@ window.addEventListener("keydown", (e) => {
   if (e.code === "KeyM") audio.toggleMute();
 });
 
-// --- Menu / start handling -------------------------------------------------
-function handleMenuInput() {
+// --- Input handling --------------------------------------------------------
+function handleInput() {
   if (game.phase === "menu") {
     // Keyboard shortcuts.
     if (input.consume("ArrowRight") || input.consume("Equal"))
@@ -56,6 +56,8 @@ function handleMenuInput() {
       else if (hit === "twoPlayer") game.start("2p");
       else if (hit === "diffUp") game.cycleDifficulty(1);
       else if (hit === "diffDown") game.cycleDifficulty(-1);
+      else if (hit === "sound") audio.toggleMute();
+      else if (hit === "crt") renderer.crt = !renderer.crt;
     }
   } else if (game.phase === "gameover") {
     if (input.consume("Digit1")) game.start("1p");
@@ -67,6 +69,21 @@ function handleMenuInput() {
       input.consume("Enter")
     )
       game.phase = "menu";
+  } else if (game.paused) {
+    if (input.consume("Escape") || input.consume("KeyP")) game.resume();
+    else if (input.consume("KeyQ")) game.quitToMenu();
+    else if (input.consume("Pointer")) {
+      const hit = renderer.hitTestPause(input.lastPress);
+      if (hit === "resume") game.resume();
+      else if (hit === "quit") game.quitToMenu();
+    }
+  } else {
+    // Active play.
+    if (input.consume("Escape") || input.consume("KeyP")) game.pause();
+    else if (input.consume("KeyQ")) game.quitToMenu();
+    else if (input.consume("Pointer")) {
+      if (renderer.hitTestPlay(input.lastPress) === "pause") game.pause();
+    }
   }
 }
 
@@ -81,14 +98,19 @@ function frame(now: number) {
   if (dt > MAX_FRAME) dt = MAX_FRAME;
   acc += dt;
 
-  handleMenuInput();
+  handleInput();
 
-  while (acc >= TICK_DT) {
-    game.step();
-    acc -= TICK_DT;
+  if (game.paused) {
+    acc = 0; // don't bank time while paused
+  } else {
+    while (acc >= TICK_DT) {
+      game.step();
+      acc -= TICK_DT;
+    }
   }
 
-  renderer.draw(game);
+  renderer.draw(game, { muted: audio.muted });
+  input.clearFrame();
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

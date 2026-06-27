@@ -137,6 +137,15 @@ export class Input {
     return { dir, targetY: this.pointerY[side] };
   }
 
+  /**
+   * Drop any unconsumed one-shot presses at the end of a frame, so a press is
+   * only ever actionable on the frame it occurred (no stale presses carrying
+   * over between phases).
+   */
+  clearFrame(): void {
+    this.pressed.clear();
+  }
+
   /** True once if the action was pressed since the last check. */
   consume(code: string): boolean {
     if (this.pressed.has(code)) {
