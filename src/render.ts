@@ -80,7 +80,7 @@ export class Renderer {
     return n * this.scale;
   }
 
-  draw(g: Game): void {
+  draw(g: Game, ui: { muted: boolean }): void {
     const ctx = this.ctx;
     // Background (whole canvas, including letterbox bars).
     ctx.fillStyle = COLOR_BG;
@@ -124,11 +124,17 @@ export class Renderer {
     }
 
     // Text overlays.
-    if (g.phase === "menu") this.drawMenu(g);
+    const playing =
+      g.phase === "serving" || g.phase === "rally" || g.phase === "point";
+    if (g.phase === "menu") this.drawMenu(g, ui.muted);
     else if (g.phase === "gameover") {
       const winner = g.score1 >= WIN_SCORE ? "LEFT" : "RIGHT";
       this.overlay([`${winner} WINS`, "", "TAP TO CONTINUE"]);
     }
+
+    // In-game pause button (hidden while paused / on menus).
+    if (playing && !g.paused) this.drawPauseButton();
+    if (g.paused) this.drawPauseOverlay();
 
     if (this.crt) this.drawCrt();
   }
@@ -153,23 +159,51 @@ export class Renderer {
   private menuButtons(): Record<string, Rect> {
     const cx = FIELD_W / 2;
     return {
-      onePlayer: { x: cx - 150, y: 250, w: 300, h: 58 },
-      twoPlayer: { x: cx - 150, y: 322, w: 300, h: 58 },
-      diffDown: { x: cx - 160, y: 452, w: 56, h: 56 },
-      diffUp: { x: cx + 104, y: 452, w: 56, h: 56 },
+      onePlayer: { x: cx - 150, y: 128, w: 300, h: 52 },
+      twoPlayer: { x: cx - 150, y: 190, w: 300, h: 52 },
+      diffDown: { x: cx - 160, y: 292, w: 52, h: 52 },
+      diffUp: { x: cx + 108, y: 292, w: 52, h: 52 },
+      sound: { x: cx - 205, y: 372, w: 190, h: 50 },
+      crt: { x: cx + 15, y: 372, w: 190, h: 50 },
     };
   }
 
-  /** Returns the key of the menu button at a virtual point, or null. */
-  hitTestMenu(p: { x: number; y: number } | null): string | null {
+  /** Pause button shown during play. */
+  private playButtons(): Record<string, Rect> {
+    const cx = FIELD_W / 2;
+    return { pause: { x: cx - 30, y: 12, w: 60, h: 50 } };
+  }
+
+  /** Buttons on the pause overlay. */
+  private pauseButtons(): Record<string, Rect> {
+    const cx = FIELD_W / 2;
+    return {
+      resume: { x: cx - 150, y: 290, w: 300, h: 56 },
+      quit: { x: cx - 150, y: 362, w: 300, h: 56 },
+    };
+  }
+
+  private hitTest(
+    rects: Record<string, Rect>,
+    p: { x: number; y: number } | null,
+  ): string | null {
     if (!p) return null;
-    const b = this.menuButtons();
-    for (const key of Object.keys(b)) {
-      const r = b[key];
+    for (const key of Object.keys(rects)) {
+      const r = rects[key];
       if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h)
         return key;
     }
     return null;
+  }
+
+  hitTestMenu(p: { x: number; y: number } | null): string | null {
+    return this.hitTest(this.menuButtons(), p);
+  }
+  hitTestPlay(p: { x: number; y: number } | null): string | null {
+    return this.hitTest(this.playButtons(), p);
+  }
+  hitTestPause(p: { x: number; y: number } | null): string | null {
+    return this.hitTest(this.pauseButtons(), p);
   }
 
   private drawButton(r: Rect, label: string, fontPx: number): void {
@@ -184,26 +218,73 @@ export class Renderer {
     ctx.fillText(label, this.fx(r.x + r.w / 2), this.fy(r.y + r.h / 2));
   }
 
-  private drawMenu(g: Game): void {
+  private drawMenu(g: Game, muted: boolean): void {
     const ctx = this.ctx;
     const cx = FIELD_W / 2;
     ctx.fillStyle = COLOR_FG;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
 
-    ctx.font = `${this.fs(72)}px "Courier New", monospace`;
-    ctx.fillText("PONG", this.fx(cx), this.fy(150));
+    ctx.font = `${this.fs(56)}px "Courier New", monospace`;
+    ctx.fillText("PONG", this.fx(cx), this.fy(84));
 
     const b = this.menuButtons();
-    this.drawButton(b.onePlayer, "1 PLAYER", 26);
-    this.drawButton(b.twoPlayer, "2 PLAYERS", 26);
+    this.drawButton(b.onePlayer, "1 PLAYER", 24);
+    this.drawButton(b.twoPlayer, "2 PLAYERS", 24);
 
-    ctx.font = `${this.fs(22)}px "Courier New", monospace`;
-    ctx.fillText("DIFFICULTY", this.fx(cx), this.fy(420));
-    this.drawButton(b.diffDown, "◄", 26);
-    this.drawButton(b.diffUp, "►", 26);
-    ctx.font = `${this.fs(44)}px "Courier New", monospace`;
-    ctx.fillText(DIFFICULTY[g.difficulty].label, this.fx(cx), this.fy(480));
+    ctx.font = `${this.fs(20)}px "Courier New", monospace`;
+    ctx.fillText("DIFFICULTY", this.fx(cx), this.fy(268));
+    this.drawButton(b.diffDown, "◄", 24);
+    this.drawButton(b.diffUp, "►", 24);
+    ctx.font = `${this.fs(38)}px "Courier New", monospace`;
+    ctx.fillText(DIFFICULTY[g.difficulty].label, this.fx(cx), this.fy(318));
+
+    this.drawButton(b.sound, muted ? "SOUND OFF" : "SOUND ON", 20);
+    this.drawButton(b.crt, this.crt ? "CRT ON" : "CRT OFF", 20);
+
+    // Keyboard hints — shown only on the menu (before a game starts).
+    ctx.fillStyle = COLOR_FG;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${this.fs(20)}px "Courier New", monospace`;
+    ctx.fillText("P1", this.fx(120), this.fy(478));
+    ctx.fillText("P2", this.fx(FIELD_W - 120), this.fy(478));
+    ctx.font = `${this.fs(18)}px "Courier New", monospace`;
+    ctx.fillText("W / S", this.fx(120), this.fy(506));
+    ctx.fillText("↑ / ↓", this.fx(FIELD_W - 120), this.fy(506));
+  }
+
+  /** The pause control shown during play — a box with two bars. */
+  private drawPauseButton(): void {
+    const r = this.playButtons().pause;
+    const ctx = this.ctx;
+    ctx.lineWidth = Math.max(2, this.fs(3));
+    ctx.strokeStyle = COLOR_FG;
+    ctx.strokeRect(this.fx(r.x), this.fy(r.y), this.fs(r.w), this.fs(r.h));
+    ctx.fillStyle = COLOR_FG;
+    const barW = r.w * 0.14;
+    const barH = r.h * 0.5;
+    const cx = r.x + r.w / 2;
+    const top = r.y + (r.h - barH) / 2;
+    ctx.fillRect(this.fx(cx - barW * 1.6), this.fy(top), this.fs(barW), this.fs(barH));
+    ctx.fillRect(this.fx(cx + barW * 0.6), this.fy(top), this.fs(barW), this.fs(barH));
+  }
+
+  private drawPauseOverlay(): void {
+    const ctx = this.ctx;
+    // Dim the frozen field.
+    ctx.fillStyle = "rgba(0,0,0,0.6)";
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    ctx.fillStyle = COLOR_FG;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = `${this.fs(56)}px "Courier New", monospace`;
+    ctx.fillText("PAUSED", this.fx(FIELD_W / 2), this.fy(200));
+
+    const b = this.pauseButtons();
+    this.drawButton(b.resume, "RESUME", 24);
+    this.drawButton(b.quit, "QUIT", 24);
   }
 
   private drawCrt(): void {

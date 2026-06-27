@@ -32,6 +32,8 @@ export type Phase = "menu" | "serving" | "rally" | "point" | "gameover";
 export class Game {
   mode: Mode = "1p";
   phase: Phase = "menu";
+  /** When true the simulation is frozen (mid-game pause). */
+  paused = false;
   /** Index into DIFFICULTY (only used in 1-player mode). */
   difficulty = DEFAULT_DIFFICULTY;
 
@@ -68,6 +70,32 @@ export class Game {
     this.difficulty = (this.difficulty + dir + n) % n;
   }
 
+  private isPlaying(): boolean {
+    return (
+      this.phase === "serving" ||
+      this.phase === "rally" ||
+      this.phase === "point"
+    );
+  }
+
+  pause(): void {
+    if (this.isPlaying()) this.paused = true;
+  }
+
+  resume(): void {
+    this.paused = false;
+  }
+
+  /** Abandon the current game and return to the menu. */
+  quitToMenu(): void {
+    this.paused = false;
+    this.phase = "menu";
+    this.score1 = 0;
+    this.score2 = 0;
+    this.p1y = (FIELD_H - PADDLE_H) / 2;
+    this.p2y = (FIELD_H - PADDLE_H) / 2;
+  }
+
   start(mode: Mode): void {
     this.mode = mode;
     this.score1 = 0;
@@ -101,6 +129,7 @@ export class Game {
 
   /** Advance one fixed physics step. */
   step(): void {
+    if (this.paused) return;
     switch (this.phase) {
       case "serving":
         this.movePaddles();
