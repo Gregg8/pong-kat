@@ -7,7 +7,10 @@ name: Deploy web to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    # `main` is the permanent production trigger; the claude/* branch is included
+    # so the site can be verified before merging. Safe to drop the claude/* line
+    # once this is merged to main.
+    branches: [main, "claude/pong-1970s-replica-n5jswi"]
     paths:
       - "src/**"
       - "index.html"
