@@ -21,6 +21,19 @@ export class Audio {
    * first tap/keypress to unlock the context.
    */
   unlock(): void {
+    // iOS: by default Web Audio runs in the "ambient" session, which the
+    // iPhone's Ring/Silent switch mutes (iPads have no such switch, which is
+    // why sound worked there but not on iPhone). Declaring the session as
+    // "playback" makes our blips ignore the silent switch. Safari 16.5+ only;
+    // harmlessly ignored elsewhere.
+    try {
+      const session = (navigator as unknown as { audioSession?: { type: string } })
+        .audioSession;
+      if (session) session.type = "playback";
+    } catch {
+      /* audioSession unsupported — nothing to do */
+    }
+
     if (this.ctx) {
       if (this.ctx.state === "suspended") void this.ctx.resume();
       return;
