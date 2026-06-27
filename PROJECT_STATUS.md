@@ -4,7 +4,7 @@
 > needs deciding. It exists so **any** session (or contributor) can pick up
 > without relying on chat history. Update it as decisions are made.
 
-_Last updated: 2026-06-27_
+_Last updated: 2026-06-27 (Gregg answered Q2–Q4; Q1 in progress)_
 
 ## Goal
 
@@ -19,39 +19,56 @@ Apple Developer account** (sideloading), explicitly _not_ as a web page.
   runs on web now and wraps into iOS later via Capacitor.
 - **Modes**: 1-player vs CPU (default) and 2-player local.
 - **Sounds**: synthesized square-wave tones via Web Audio (no sampled assets).
-- **Look**: clean black & white by default; optional CRT overlay (toggle `C`).
+- **Look**: **retro CRT on by default** (scanlines + vignette); toggle `C`.
 - **Smoothness**: fixed 120 Hz timestep sim, render every animation frame.
 - **Win condition**: first to 11.
+- **Difficulty**: 5 AI levels (default 3), selectable on the menu with ◄/►
+  (arrows or +/-). A proper touch slider is still TODO.
 
 ## Status
 
 - ✅ Web build — playable, verified rendering. Merged to `main` (PR #1).
 - ⏳ iPhone native wrapper — not started (waiting on the Mac question below).
 
-## OPEN QUESTIONS (awaiting Gregg's answers)
+## Decisions / answers
 
-1. **Mac available?** This gates the native iPhone path.
-   - Yes → Capacitor → Xcode → sideload with a free Apple ID (re-signs every 7
-     days). Cleanest "real app on phone."
-   - No → native iOS is awkward (AltStore, or a cloud-Mac CI). Worth
-     reconsidering whether an installable PWA ("Add to Home Screen" = real
-     fullscreen app icon, no account, no 7-day expiry) is truly off the table.
-   - **Answer:** _(unanswered)_
+1. **Mac:** Mac Mini arriving in ~2 months. Until then, wants a no-Mac way to
+   run the game on the iPhone via a "downloadable app runtime." Research done —
+   see [iOS interim options](#ios-interim-options-no-mac-until-the-mac-mini)
+   below. **Still need from Gregg:** which computer he has now (Windows/Linux?)
+   and his region (EU?), since those pick the route.
+2. **Sounds:** current frequencies are fine. ✅
+3. **CRT look:** retro CRT is the **default** now (toggle `C`). ✅
+4. **Difficulty:** 5 selectable AI levels added (default 3). A touch-friendly
+   slider UI is still TODO. ✅
 
-2. **Sound reference.** Currently using commonly-documented frequencies (paddle
-   459 Hz, wall 226 Hz, score 490 Hz, square waves). If there's a specific
-   reference recording to match, point to it.
-   - **Answer:** _(unanswered)_
+## iOS interim options (no Mac, until the Mac Mini)
 
-3. **CRT look default.** Currently off (clean B&W) with a toggle. Want it on by
-   default for max authenticity?
-   - **Answer:** _(unanswered)_
+The long-term plan stays **Capacitor** (wrap the existing web build), because
+that's exactly what we'll keep using once the Mac Mini lands — no rework.
 
-4. **AI difficulty.** CPU is deliberately beatable. Too easy / hard / add levels?
-   - **Answer:** _(unanswered)_
+Reality check: any *standalone* iOS app must be built on macOS (or a cloud Mac)
+and code-signed. A free Apple ID can sign for sideloading but caps you at 3 apps
+with a **7-day** certificate. The realistic no-Mac routes:
 
-## Likely next steps (once questions are answered)
+- **A. Capacitor IPA built on a free cloud Mac (Codemagic / GitHub Actions) →
+  sideload with Sideloadly / AltStore / SideStore using a free Apple ID.**
+  Real standalone app icon. Same Capacitor setup as the Mac Mini → zero rework.
+  Needs a Windows/Linux PC for sideloading; 7-day refresh (SideStore avoids
+  re-tethering to a computer). **← recommended if a Windows/Linux PC exists.**
+- **B. Expo Go (the "runtime you download")** + a thin React-Native WebView that
+  loads our web build. No Mac, no signing, no 7-day limit. But it runs *inside*
+  Expo Go (no own icon), needs a computer running the dev server, and adds a
+  throwaway RN shell.
+- **C. Wait ~2 months** for the Mac Mini, then Capacitor + Xcode free-provision
+  (7-day) or a paid account for the App Store.
 
-- Scaffold the Capacitor iOS project so it's ready to open in Xcode.
-- Tune sounds / difficulty / CRT per the answers above.
-- Optional web polish (settings menu, pause screen).
+EU note: the DMA lets **AltStore PAL** install notarized apps without the 7-day
+limit and without a desktop — materially better if Gregg is in the EU.
+
+## Next steps
+
+- Resolve route A vs B (needs Gregg's computer + region).
+- Add Capacitor to the project so an IPA can be cloud-built (route A) — also the
+  permanent Mac path.
+- Touch UI for difficulty; optional pause screen / settings.

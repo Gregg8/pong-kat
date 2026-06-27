@@ -40,6 +40,10 @@ window.addEventListener("keydown", (e) => {
 // --- Menu / start handling -------------------------------------------------
 function handleMenuInput() {
   if (game.phase === "menu") {
+    // Adjust difficulty with arrows / + / - before starting.
+    if (input.consume("ArrowRight") || input.consume("Equal")) game.cycleDifficulty(1);
+    if (input.consume("ArrowLeft") || input.consume("Minus")) game.cycleDifficulty(-1);
+
     if (input.consume("Digit1") || input.consume("Numpad1")) game.start("1p");
     else if (input.consume("Digit2") || input.consume("Numpad2"))
       game.start("2p");

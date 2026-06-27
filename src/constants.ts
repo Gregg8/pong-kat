@@ -50,6 +50,19 @@ export const PADDLE_ZONE_VY = [330, 235, 140, 55];
 /** Delay (seconds) between a point being scored and the next serve. */
 export const SERVE_DELAY = 1.1;
 
+// --- AI difficulty levels --------------------------------------------------
+// `speed` scales the CPU paddle's max speed (1.0 ~= a human); `err` is the
+// vertical aim-error band in virtual units (bigger = sloppier = easier).
+export const DIFFICULTY = [
+  { label: "1", speed: 0.6, err: 80 },
+  { label: "2", speed: 0.72, err: 58 },
+  { label: "3", speed: 0.86, err: 40 },
+  { label: "4", speed: 0.96, err: 22 },
+  { label: "5", speed: 1.08, err: 8 },
+];
+/** Index into DIFFICULTY for the starting level (level 3). */
+export const DEFAULT_DIFFICULTY = 2;
+
 // --- Net (center dashed line) ---------------------------------------------
 export const NET_DASH = 18;
 export const NET_GAP = 14;
