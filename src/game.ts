@@ -20,6 +20,8 @@ import {
   SERVE_DELAY,
   WIN_SCORE,
   TICK_DT,
+  DIFFICULTY,
+  DEFAULT_DIFFICULTY,
 } from "./constants";
 import type { Input } from "./input";
 import type { Audio } from "./audio";
@@ -30,6 +32,8 @@ export type Phase = "menu" | "serving" | "rally" | "point" | "gameover";
 export class Game {
   mode: Mode = "1p";
   phase: Phase = "menu";
+  /** Index into DIFFICULTY (only used in 1-player mode). */
+  difficulty = DEFAULT_DIFFICULTY;
 
   // Paddle Y is the top edge.
   p1y = (FIELD_H - PADDLE_H) / 2;
@@ -57,6 +61,12 @@ export class Game {
     private input: Input,
     private audio: Audio,
   ) {}
+
+  /** Change difficulty (wraps), used from the menu. dir = +1 / -1. */
+  cycleDifficulty(dir: number): void {
+    const n = DIFFICULTY.length;
+    this.difficulty = (this.difficulty + dir + n) % n;
+  }
 
   start(mode: Mode): void {
     this.mode = mode;
@@ -151,14 +161,15 @@ export class Game {
   }
 
   private applyAI(y: number): number {
+    const diff = DIFFICULTY[this.difficulty];
     // Re-aim a few times per second; only react when the ball approaches.
     this.aiThink -= TICK_DT;
     const approaching = this.bvx > 0;
     if (this.aiThink <= 0) {
       this.aiThink = 0.08;
       if (approaching && this.phase === "rally") {
-        // Aim at the ball with a small error band so it's beatable.
-        const err = (((this.p2y * 7) % 53) / 53 - 0.5) * 46;
+        // Aim at the ball with an error band scaled by difficulty.
+        const err = (((this.p2y * 7) % 53) / 53 - 0.5) * diff.err;
         this.aiTargetY = this.by + err;
       } else {
         // Drift back toward center when idle.
@@ -167,8 +178,8 @@ export class Game {
     }
     const desired = this.aiTargetY - PADDLE_H / 2;
     const delta = desired - y;
-    // AI slightly slower than a human so a sharp player can win.
-    const maxStep = PADDLE_SPEED * 0.86 * TICK_DT;
+    // Paddle speed scaled by difficulty (1.0 ~= a human).
+    const maxStep = PADDLE_SPEED * diff.speed * TICK_DT;
     const dead = 6;
     if (Math.abs(delta) > dead) {
       y += Math.sign(delta) * Math.min(maxStep, Math.abs(delta));

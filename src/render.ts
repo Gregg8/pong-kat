@@ -16,13 +16,15 @@ import {
   COLOR_FG,
   COLOR_BG,
   WIN_SCORE,
+  DIFFICULTY,
 } from "./constants";
 import { drawNumber } from "./font";
 import type { Game } from "./game";
 
 export class Renderer {
   ctx: CanvasRenderingContext2D;
-  crt = false;
+  // Retro CRT look is the default; toggle with `C`.
+  crt = true;
 
   /** Scale + offset mapping virtual coords -> canvas pixels. */
   private scale = 1;
@@ -120,7 +122,15 @@ export class Renderer {
     }
 
     // Text overlays.
-    if (g.phase === "menu") this.overlay(["PONG", "", "1 — ONE PLAYER", "2 — TWO PLAYERS"]);
+    if (g.phase === "menu")
+      this.overlay([
+        "PONG",
+        "",
+        "1 — ONE PLAYER",
+        "2 — TWO PLAYERS",
+        "",
+        `◄  DIFFICULTY  ${DIFFICULTY[g.difficulty].label}  ►`,
+      ]);
     else if (g.phase === "gameover") {
       const winner = g.score1 >= WIN_SCORE ? "LEFT" : "RIGHT";
       this.overlay([`${winner} WINS`, "", "PRESS START"]);

@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 
-// Relative base so the same build works on the web AND inside a Capacitor
-// iOS WebView (which loads from a file:// or capacitor:// origin).
+// Relative base so the same build works on the web (GitHub Pages, served from
+// a /pong-kat/ subpath) AND inside a Capacitor iOS WebView (file:///capacitor://).
 export default defineConfig({
   base: "./",
   build: {
